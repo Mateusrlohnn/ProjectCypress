@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "cypress": "^15.8.2"
+  },
+  "dependencies": {
+    "cypress-docgen": "^1.0.1"
+  }
+}
