@@ -2,7 +2,28 @@
  * @description User Login Tests
  * @author Mateus Rachadel Lohn
  */
+
 describe('Login tests', () => {
+
+  let tempUser
+  
+  before(() => {
+    const user = {
+      nome: 'Usuario Temporario',
+      email: `user_${Date.now()}@test.com`,
+      password: '123123',
+      administrador: 'true'
+    }
+
+    cy.request('POST', 'https://serverest.dev/usuarios', user)
+      .then(() => {
+        tempUser = {
+          email: user.email,
+          password: user.password
+        }
+      })
+  })
+
   describe('Login - Authentication', () => {
 
     beforeEach(() => {
@@ -10,15 +31,15 @@ describe('Login tests', () => {
     })
 
     it('Should login successfully', () => {
-      cy.get('[data-testid="email"]').type('mateus123lohn@gmail.com')
-      cy.get('[data-testid="senha"]').type('123123')
+      cy.get('[data-testid="email"]').type(tempUser.email)
+      cy.get('[data-testid="senha"]').type(tempUser.password)
       cy.get('[data-testid="entrar"]').click()
 
       cy.url().should('include', '/home')
     })
 
     it('Should not login with invalid credentials', () => {
-      cy.get('[data-testid="email"]').type('mateus123lohn@gmail.com')
+      cy.get('[data-testid="email"]').type(tempUser.email)
       cy.get('[data-testid="senha"]').type('123')
       cy.get('[data-testid="entrar"]').click()
 
@@ -26,14 +47,14 @@ describe('Login tests', () => {
     })
 
     it('Should not login with empty email', () => {
-      cy.get('[data-testid="senha"]').type('12345')
+      cy.get('[data-testid="senha"]').type(tempUser.password)
       cy.get('[data-testid="entrar"]').click()
 
       cy.contains('Email é obrigatório').should('be.visible')
     })
 
     it('Should not login with empty password', () => {
-      cy.get('[data-testid="email"]').type('mateus123lohn@gmail.com')
+      cy.get('[data-testid="email"]').type(tempUser.email)
       cy.get('[data-testid="entrar"]').click()
 
       cy.contains('Password é obrigatório').should('be.visible')
@@ -47,31 +68,33 @@ describe('Login tests', () => {
     })
 
   })
+
   describe('Validation', () => {
+
     beforeEach(() => {
       cy.visit('https://front.serverest.dev/login')
     })
 
     it('Should login when pressing Enter', () => {
-      cy.get('[data-testid="email"]').type('mateus123lohn@gmail.com')
-      cy.get('[data-testid="senha"]').type('123123{enter}')
+      cy.get('[data-testid="email"]').type(tempUser.email)
+      cy.get('[data-testid="senha"]').type(`${tempUser.password}{enter}`)
 
       cy.url().should('include', '/home')
     })
 
     it('Should keep fields filled after login error', () => {
-      cy.get('[data-testid="email"]').type('user@test.com')
+      cy.get('[data-testid="email"]').type(tempUser.email)
       cy.get('[data-testid="senha"]').type('wrongpassword')
       cy.get('[data-testid="entrar"]').click()
 
       cy.contains('Email e/ou senha inválidos').should('be.visible')
 
-      cy.get('[data-testid="email"]').should('have.value', 'user@test.com')
+      cy.get('[data-testid="email"]').should('have.value', tempUser.email)
       cy.get('[data-testid="senha"]').should('have.value', 'wrongpassword')
     })
 
     it('Should allow clearing fields after error', () => {
-      cy.get('[data-testid="email"]').type('user@test.com')
+      cy.get('[data-testid="email"]').type(tempUser.email)
       cy.get('[data-testid="senha"]').type('wrongpassword')
       cy.get('[data-testid="entrar"]').click()
 
@@ -96,32 +119,34 @@ describe('Login tests', () => {
     })
 
   })
+
   describe('Registration - Security & Resilience', () => {
-  beforeEach(() => {
-    cy.visit('https://front.serverest.dev/login')
-    cy.get('[data-testid="cadastrar"]').click()
+
+    beforeEach(() => {
+      cy.visit('https://front.serverest.dev/login')
+      cy.get('[data-testid="cadastrar"]').click()
+    })
+
+    it('Password field should be masked', () => {
+      cy.get('[data-testid="password"]')
+        .should('have.attr', 'type', 'password')
+    })
+
+    it('Admin checkbox should be unchecked by default', () => {
+      cy.get('[data-testid="checkbox"]').should('not.be.checked')
+    })
+
+    it('Error messages should be generic and not expose system details', () => {
+      cy.get('[data-testid="nome"]').type('Usuário Teste')
+      cy.get('[data-testid="email"]').type(`fail_${Date.now()}@test.com`)
+      cy.get('[data-testid="password"]').type('12')
+      cy.get('[data-testid="cadastrar"]').click()
+
+      cy.contains('Exception').should('not.exist')
+      cy.contains('SQL').should('not.exist')
+      cy.contains('NullPointer').should('not.exist')
+    })
+
   })
-
-  it('Password field should be masked', () => {
-    cy.get('[data-testid="password"]')
-      .should('have.attr', 'type', 'password')
-  })
-
-  it('Admin checkbox should be unchecked by default', () => {
-    cy.get('[data-testid="checkbox"]').should('not.be.checked')
-  })
-
-  it('Error messages should be generic and not expose system details', () => {
-    cy.get('[data-testid="nome"]').type('Usuário Teste')
-    cy.get('[data-testid="email"]').type('email@teste.com')
-    cy.get('[data-testid="password"]').type('12')
-    cy.get('[data-testid="cadastrar"]').click()
-
-    cy.contains('Exception').should('not.exist')
-    cy.contains('SQL').should('not.exist')
-    cy.contains('NullPointer').should('not.exist')
-  })
-
-})
 
 })

@@ -2,15 +2,33 @@
  * @description Administrator Usability Tests
  * @author Mateus Rachadel Lohn
  */
-describe('Administrator Navigation', () => {  
-  const EMAIL = 'mateuslAdm@gmail.com'
-  const SENHA = '123123'
 
+describe('Administrator Navigation', () => {
+
+  let adminUser
+
+  before(() => {
+    const admin = {
+      nome: 'Administrador QA',
+      email: `admin_${Date.now()}@test.com`,
+      password: '123123',
+      administrador: 'true'
+    }
+
+    cy.request('POST', 'https://serverest.dev/usuarios', admin)
+      .then(() => {
+        adminUser = {
+          email: admin.email,
+          password: admin.password
+        }
+      })
+  })
+  
   beforeEach(() => {
     cy.visit('https://front.serverest.dev/login')
 
-    cy.get('[data-testid="email"]').type(EMAIL)
-    cy.get('[data-testid="senha"]').type(SENHA)
+    cy.get('[data-testid="email"]').type(adminUser.email)
+    cy.get('[data-testid="senha"]').type(adminUser.password)
     cy.get('[data-testid="entrar"]').click()
 
     cy.url().should('include', '/home')
@@ -141,7 +159,6 @@ describe('Administrator Navigation', () => {
         .contains('Excluir')
         .click()
     })
-
     cy.url().should('include', '/admin/listarprodutos')
   })
 })
